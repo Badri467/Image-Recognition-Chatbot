@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Recognition Chatbot</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #343541;
+      color: #ececec;
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 250px;
+      background: #2d2f36;
+      padding: 20px;
+    }
+    .sidebar h2 {
+      margin-bottom: 15px;
+    }
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 800px;
+      height: 90vh;
+      background-color: #40414f;
+      border-radius: 8px;
+      overflow: hidden;
+      margin: auto;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+    .chat-header {
+      padding: 15px;
+      background-color: #343541;
+      text-align: center;
+      font-size: 1.25em;
+      border-bottom: 1px solid #2d2f36;
+    }
+    .chat-box {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background-color: #343541;
+    }
+    .chat-input {
+      padding: 10px;
+      border-top: 1px solid #2d2f36;
+      background-color: #40414f;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .chat-input input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 5px;
+      background-color: #343541;
+      color: white;
+    }
+    .chat-input button {
+      background-color: #10a37f;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .chat-input button:hover {
+      background-color: #0e8e6d;
+    }
+    .message {
+      margin-bottom: 20px;
+      display: flex;
+    }
+    .message.bot { justify-content: flex-start; }
+    .message.user { justify-content: flex-end; }
+    .bubble {
+      max-width: 70%;
+      padding: 12px 18px;
+      border-radius: 16px;
+      word-break: break-word;
+    }
+    .message.bot .bubble {
+      background-color: #444654;
+      color: #ececec;
+      border-bottom-left-radius: 0;
+    }
+    .message.user .bubble {
+      background-color: #10a37f;
+      color: #fff;
+      border-bottom-right-radius: 0;
+    }
+    .bubble img {
+      max-width: 200px;
+      height: auto;
+      border-radius: 8px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Menu</h2>
+    <p>Upload Image</p>
+    <p>Text Query</p>
+  </div>
+  <div class="chat-container">
+    <div class="chat-header">Image Recognition Chatbot</div>
+    <div class="chat-box" id="chatBox">
+      <div class="message bot">
+        <div class="bubble">Hello! Upload an image or type a query.</div>
+      </div>
+    </div>
+    <div class="chat-input">
+      <input type="text" id="textQuery" placeholder="Type your query...">
+      <input type="file" id="imageInput" accept="image/*" hidden>
+      <button id="sendText">Send</button>
+      <button id="uploadButton">Upload</button>
+    </div>
+  </div>
+
+  <script>
+    function appendMessage(sender, content, isImage = false) {
+      const chatBox = document.getElementById("chatBox");
+      const messageDiv = document.createElement("div");
+      messageDiv.className = `message ${sender}`;
+
+      const bubbleDiv = document.createElement("div");
+      bubbleDiv.className = "bubble";
+
+      if (isImage) {
+        const img = document.createElement("img");
+        img.src = content;
+        bubbleDiv.appendChild(img);
+      } else {
+        bubbleDiv.textContent = content;
+      }
+
+      messageDiv.appendChild(bubbleDiv);
+      chatBox.appendChild(messageDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // Handle text queries
+    document.getElementById("sendText").addEventListener("click", async () => {
+      const queryInput = document.getElementById("textQuery");
+      const query = queryInput.value.trim();
+
+      if (!query) return;
+
+      // Add user message
+      appendMessage("user", query);
+      queryInput.value = "";
+
+      try {
+        const response = await fetch("http://127.0.0.1:5000/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query })
+        });
+
+        const data = await response.json();
+        appendMessage("bot", data.response);
+      } catch (error) {
+        appendMessage("bot", "Error: " + error.message);
+      }
+    });
+
+    // Handle image uploads
+    document.getElementById("imageInput").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Display image preview
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        appendMessage("user", event.target.result, true);
+      };
+      reader.readAsDataURL(file);
+
+      // Send to backend
+      const formData = new FormData();
+      formData.append("image", file);
+
+      try {
+        const response = await fetch("http://127.0.0.1:5000/upload", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+        appendMessage("bot", data.response);
+      } catch (error) {
+        appendMessage("bot", "Error: " + error.message);
+      }
+    });
+
+    // Trigger file input when upload button is clicked
+    document.getElementById("uploadButton").addEventListener("click", () => {
+      document.getElementById("imageInput").click();
+    });
+
+    // Handle Enter key for text input
+    document.getElementById("textQuery").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("sendText").click();
+      }
+    });
+    // Add clear history button to HTML
+
+  </script>
+</body>
+</html>
