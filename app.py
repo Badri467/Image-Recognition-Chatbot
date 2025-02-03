@@ -5,12 +5,12 @@ import os
 
 app = Flask(__name__)
 
-# Configure Gemini API
-API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyCsUMAfUu-IXXpIuJNdEKfUtb-d5kTCqIs")
+
+API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_API_KEY")
 genai.configure(api_key=API_KEY)
 
-# Use the latest model
-VISION_MODEL = "gemini-1.5-flash"  # Updated model name
+
+VISION_MODEL = "gemini-1.5-flash" 
 TEXT_MODEL = "gemini-1.5-flash"
 
 @app.route("/")
@@ -42,10 +42,10 @@ def upload_image():
         file = request.files["image"]
         image = Image.open(file)
 
-        # Create model with both image and text capabilities
+       
         model = genai.GenerativeModel(VISION_MODEL)
 
-        # You need to provide a prompt with the image
+      
         response = model.generate_content([
             "Analyze this image and describe its contents in detail",
             image
