@@ -7,8 +7,8 @@ import os
 app = Flask(__name__)
 
 # API configurations
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyCsUMAfUu-IXXpIuJNdEKfUtb-d5kTCqIs")
-ZUKI_API_KEY = os.getenv("ZUKI_API_KEY", "zu-9309fd3a82d6888de69baba0e56772c4")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
+ZUKI_API_KEY = os.getenv("ZUKI_API_KEY", "YOUR_ZUKI_API_KEY")
 
 genai.configure(api_key=GEMINI_API_KEY)
 zuki_client = OpenAI(base_url="https://api.zukijourney.com/v1", api_key=ZUKI_API_KEY)
