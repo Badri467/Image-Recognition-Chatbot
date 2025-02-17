@@ -122,12 +122,19 @@
       </div>
     </div>
     <div class="chat-input">
+      <select id="modelSelect">
+        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+        <option value="caramelldansen-1">Caramelldansen-1</option>
+        <option value="gpt-4o-mini">GPT-4o Mini</option>
+        <option value="claude-3-haiku">Claude 3 Haiku</option>
+        <option value="deepseek-coder-6.7b-base">Deepseek Coder Base</option>
+        <option value="deepseek-coder-6.7b-instruct">Deepseek Coder Instruct</option>
+      </select>
       <input type="text" id="textQuery" placeholder="Type your query...">
       <input type="file" id="imageInput" accept="image/*" hidden>
       <button id="sendText">Send</button>
       <button id="uploadButton">Upload</button>
     </div>
-  </div>
 
   <script>
     function appendMessage(sender, content, isImage = false) {
@@ -152,29 +159,35 @@
     }
 
     // Handle text queries
-    document.getElementById("sendText").addEventListener("click", async () => {
-      const queryInput = document.getElementById("textQuery");
-      const query = queryInput.value.trim();
+    document.getElementById('sendText').addEventListener('click', async () => {
+    const queryInput = document.getElementById('textQuery');
+    const query = queryInput.value.trim();
+    const model = document.getElementById('modelSelect').value;
 
-      if (!query) return;
+    if (!query) return;
 
-      // Add user message
-      appendMessage("user", query);
-      queryInput.value = "";
+    // Add user message
+    appendMessage("user", query);
+    queryInput.value = "";
 
-      try {
-        const response = await fetch("http://127.0.0.1:5000/query", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query })
+    try {
+        const response = await fetch('/query', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                query: query,
+                model: model
+            })
         });
 
         const data = await response.json();
         appendMessage("bot", data.response);
-      } catch (error) {
+    } catch (error) {
         appendMessage("bot", "Error: " + error.message);
-      }
-    });
+    }
+});
 
     // Handle image uploads
     document.getElementById("imageInput").addEventListener("change", async (e) => {
