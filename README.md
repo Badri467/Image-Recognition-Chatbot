@@ -25,7 +25,7 @@ An intelligent chatbot application that combines advanced image recognition capa
 - **JavaScript**: For client-side interactions
 - **Fetch API**: For asynchronous communication with the backend
   
-
+![Chatbot Interface](./Screenshot 2025-03-13 222038.png)
 ## Use Cases
 
 - **Education**: Analyze diagrams, charts, or educational content in images
