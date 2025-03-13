@@ -26,7 +26,7 @@ An intelligent chatbot application that combines advanced image recognition capa
 - **Fetch API**: For asynchronous communication with the backend
   
 ![Chatbot Interface](./Screenshot%202025-03-13%20222038.png)
-![Image Upload](./images/Screenshot%202025-03-13%20222114.png)
+![Image Upload](./Screenshot%202025-03-13%20222114.png)
 ## Use Cases
 
 - **Education**: Analyze diagrams, charts, or educational content in images
@@ -37,9 +37,9 @@ An intelligent chatbot application that combines advanced image recognition capa
 - **Travel**: Identify landmarks, locations, or points of interest in travel photos
 - **Art Analysis**: Understand artistic styles, techniques, or subject matter in artwork
 - **Design Feedback**: Get AI insights on design work, UI mockups, or prototypes
-![Query Processing](./images/Screenshot%202025-03-13%20222257.png)
-![Query Processing](./images/Screenshot%202025-03-13%20222326.png)
-![Results](./images/Screenshot%202025-03-13%20222450.png)
+![Query Processing](./Screenshot%202025-03-13%20222257.png)
+![Query Processing](./Screenshot%202025-03-13%20222326.png)
+![Results](./Screenshot%202025-03-13%20222450.png)
 ## Setup Instructions
 
 ### Prerequisites
