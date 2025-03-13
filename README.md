@@ -5,12 +5,6 @@ An intelligent chatbot application that combines advanced image recognition capa
 ## Features
 
 - **Image Analysis**: Upload images and ask specific questions about their content
-- **Multi-Model Support**: Choose from various AI models for different types of queries:
-  - Gemini 1.5 Flash
-  - Caramelldansen-1
-  - Claude 3 Haiku
-  - Deepseek Coder Base
-  - Deepseek Coder Instruct
 - **Visual Concept Extraction**: Uses the CLIP model to identify objects, activities, emotions, and styles in uploaded images
 - **Enhanced Prompting**: Combines visual concepts with user queries to provide more accurate and contextually relevant responses
 - **User-Friendly Interface**: Clean, intuitive chat interface with image upload capabilities
@@ -30,6 +24,7 @@ An intelligent chatbot application that combines advanced image recognition capa
 - **HTML/CSS**: For responsive user interface
 - **JavaScript**: For client-side interactions
 - **Fetch API**: For asynchronous communication with the backend
+  
 
 ## Use Cases
 
