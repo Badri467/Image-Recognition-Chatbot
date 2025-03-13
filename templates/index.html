@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,8 +56,32 @@
       border-top: 1px solid #2d2f36;
       background-color: #40414f;
       display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .input-row {
+      display: flex;
       align-items: center;
       gap: 10px;
+    }
+    .attachment-area {
+      padding: 8px;
+      background-color: #444654;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .attachment-area img {
+      max-height: 60px;
+      border-radius: 4px;
+    }
+    .attachment-area .remove-btn {
+      background: none;
+      border: none;
+      color: #a0a0a0;
+      cursor: pointer;
+      font-size: 16px;
     }
     .chat-input input[type="text"] {
       flex: 1;
@@ -106,6 +131,9 @@
       border-radius: 8px;
       margin-top: 5px;
     }
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -118,25 +146,34 @@
     <div class="chat-header">Image Recognition Chatbot</div>
     <div class="chat-box" id="chatBox">
       <div class="message bot">
-        <div class="bubble">Hello! Upload an image or type a query.</div>
+        <div class="bubble">Hello! Upload an image or type a query. If you upload an image, you can ask questions about it.</div>
       </div>
     </div>
     <div class="chat-input">
-      <select id="modelSelect">
-        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-        <option value="caramelldansen-1">Caramelldansen-1</option>
-        <option value="gpt-4o-mini">GPT-4o Mini</option>
-        <option value="claude-3-haiku">Claude 3 Haiku</option>
-        <option value="deepseek-coder-6.7b-base">Deepseek Coder Base</option>
-        <option value="deepseek-coder-6.7b-instruct">Deepseek Coder Instruct</option>
-      </select>
-      <input type="text" id="textQuery" placeholder="Type your query...">
-      <input type="file" id="imageInput" accept="image/*" hidden>
-      <button id="sendText">Send</button>
-      <button id="uploadButton">Upload</button>
+      <div id="attachmentArea" class="attachment-area hidden">
+        <img id="imagePreview" src="" alt="Image preview">
+        <button class="remove-btn" id="removeAttachment">x</button>
+      </div>
+      <div class="input-row">
+        <select id="modelSelect">
+          <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+          <option value="caramelldansen-1">Caramelldansen-1</option>
+          <option value="claude-3-haiku">Claude 3 Haiku</option>         
+          <option value="deepseek-coder-6.7b-base">Deepseek Coder Base</option>
+          <option value="deepseek-coder-6.7b-instruct">Deepseek Coder Instruct</option>
+        </select>
+        <input type="text" id="textQuery" placeholder="Type your query...">
+        <input type="file" id="imageInput" accept="image/*" hidden>
+        <button id="sendButton">Send</button>
+        <button id="uploadButton">Upload</button>
+      </div>
     </div>
+  </div>
 
   <script>
+    // Global variable to store the currently attached image file
+    let currentAttachedImage = null;
+
     function appendMessage(sender, content, isImage = false) {
       const chatBox = document.getElementById("chatBox");
       const messageDiv = document.createElement("div");
@@ -158,64 +195,74 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // Handle text queries
-    document.getElementById('sendText').addEventListener('click', async () => {
-    const queryInput = document.getElementById('textQuery');
-    const query = queryInput.value.trim();
-    const model = document.getElementById('modelSelect').value;
+    // Handle sending messages (text-only or image+text)
+    document.getElementById('sendButton').addEventListener('click', async () => {
+      const queryInput = document.getElementById('textQuery');
+      const query = queryInput.value.trim();
+      const model = document.getElementById('modelSelect').value;
 
-    if (!query) return;
+      if (!query) return;
 
-    // Add user message
-    appendMessage("user", query);
-    queryInput.value = "";
-
-    try {
-        const response = await fetch('/query', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                query: query,
-                model: model
-            })
-        });
-
-        const data = await response.json();
-        appendMessage("bot", data.response);
-    } catch (error) {
-        appendMessage("bot", "Error: " + error.message);
-    }
-});
-
-    // Handle image uploads
-    document.getElementById("imageInput").addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      // Display image preview
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        appendMessage("user", event.target.result, true);
-      };
-      reader.readAsDataURL(file);
-
-      // Send to backend
-      const formData = new FormData();
-      formData.append("image", file);
+      // Add user message to chat
+      appendMessage("user", query);
+      
+      // Clear input field
+      queryInput.value = "";
 
       try {
-        const response = await fetch("http://127.0.0.1:5000/upload", {
-          method: "POST",
-          body: formData
-        });
+        // If there's an attached image, process as image+query
+        if (currentAttachedImage) {
+          const formData = new FormData();
+          formData.append("image", currentAttachedImage);
+          formData.append("query", query);
+          
+          const response = await fetch('/process_image_query', {
+            method: 'POST',
+            body: formData
+          });
+          
+          const data = await response.json();
+          appendMessage("bot", data.response);
+          
+          // Don't remove the image attachment after sending
+          // This allows asking multiple questions about the same image
+        } 
+        // Otherwise, process as text-only query
+        else {
+          const response = await fetch('/query', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              query: query,
+              model: model
+            })
+          });
 
-        const data = await response.json();
-        appendMessage("bot", data.response);
+          const data = await response.json();
+          appendMessage("bot", data.response);
+        }
       } catch (error) {
         appendMessage("bot", "Error: " + error.message);
       }
+    });
+
+    // Handle image uploads (as attachment)
+    document.getElementById("imageInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Store the file for later submission
+      currentAttachedImage = file;
+
+      // Display image preview in the attachment area
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        document.getElementById("imagePreview").src = event.target.result;
+        document.getElementById("attachmentArea").classList.remove("hidden");
+      };
+      reader.readAsDataURL(file);
     });
 
     // Trigger file input when upload button is clicked
@@ -223,15 +270,20 @@
       document.getElementById("imageInput").click();
     });
 
+    // Remove attachment when X is clicked
+    document.getElementById("removeAttachment").addEventListener("click", () => {
+      currentAttachedImage = null;
+      document.getElementById("attachmentArea").classList.add("hidden");
+      document.getElementById("imagePreview").src = "";
+    });
+
     // Handle Enter key for text input
     document.getElementById("textQuery").addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        document.getElementById("sendText").click();
+        document.getElementById("sendButton").click();
       }
     });
-    // Add clear history button to HTML
-
   </script>
 </body>
 </html>
