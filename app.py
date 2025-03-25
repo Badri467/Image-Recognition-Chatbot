@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify, render_template
 import google.generativeai as genai
 from openai import OpenAI
@@ -12,11 +11,11 @@ from io import BytesIO
 app = Flask(__name__)
 
 # API configurations
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
-ZUKI_API_KEY = os.getenv("ZUKI_API_KEY", "YOUR_ZUKI_API_HERE")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyCsUMAfUu-IXXpIuJNdEKfUtb-d5kTCqIs")
+MEOW_API_KEY = os.getenv("MEOW_API_KEY", "meow-6c568600-ab88-4dd4-a28a-b47bb3d664a0")  # Replace with your actual Meow API key
 
 genai.configure(api_key=GEMINI_API_KEY)
-zuki_client = OpenAI(base_url="https://api.zukijourney.com/v1", api_key=ZUKI_API_KEY)
+meow_client = OpenAI(base_url="https://meow.cablyai.com/v1", api_key=MEOW_API_KEY)
 
 # Load CLIP model
 clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
@@ -26,10 +25,17 @@ clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 VISION_MODEL = "gemini-1.5-flash"
 AVAILABLE_MODELS = {
     "gemini-1.5-flash": "gemini",
-    "caramelldansen-1": "zuki",
-    "claude-3-haiku": "zuki",
-    "deepseek-coder-6.7b-base": "zuki",
-    "deepseek-coder-6.7b-instruct": "zuki"
+    "gpt-4o": "meow",
+    "gemini-2.0-flash": "meow",
+    "gpt-4o-mini": "meow",
+    "grok-2": "meow",
+    "llama-3.1-405b": "meow",
+    "mistral-nemo-12b": "meow",
+    "claude-3.5-sonnet": "meow",
+    "claude-3.7-sonnet": "meow",
+    "gpt-4.5-preview": "meow",
+    "llama-3.2-11b-instruct": "meow",
+    "deepseek-coder-6.7b-instruct-awq": "meow",
 }
 
 @app.route("/")
@@ -50,10 +56,14 @@ def text_query():
             model = genai.GenerativeModel(selected_model)
             response = model.generate_content(user_query)
             return jsonify({"response": response.text})
-        else:
-            response = zuki_client.chat.completions.create(
+        else:  # Using Meow API
+            response = meow_client.chat.completions.create(
                 model=selected_model,
-                messages=[{"role": "user", "content": user_query}]
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": user_query}
+                ],
+                temperature=0.7
             )
             return jsonify({"response": response.choices[0].message.content})
 
