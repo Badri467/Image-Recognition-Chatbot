@@ -11,8 +11,8 @@ from io import BytesIO
 app = Flask(__name__)
 
 # API configurations
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyCsUMAfUu-IXXpIuJNdEKfUtb-d5kTCqIs")
-MEOW_API_KEY = os.getenv("MEOW_API_KEY", "meow-6c568600-ab88-4dd4-a28a-b47bb3d664a0")  # Replace with your actual Meow API key
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
+MEOW_API_KEY = os.getenv("MEOW_API_KEY", "YOUR_MEOW_API_KEY")  # Replace with your actual Meow API key
 
 genai.configure(api_key=GEMINI_API_KEY)
 meow_client = OpenAI(base_url="https://meow.cablyai.com/v1", api_key=MEOW_API_KEY)
