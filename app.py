@@ -1,21 +1,47 @@
 from flask import Flask, request, jsonify, render_template
 import google.generativeai as genai
 from openai import OpenAI
+from groq import Groq
 from PIL import Image
 import os
-import torch
+from dotenv import load_dotenv
+import torch # type: ignore
 from transformers import CLIPProcessor, CLIPModel
 import base64
 from io import BytesIO
+import markdown
+from markdown.extensions import fenced_code, tables, nl2br
+from markdown.extensions.codehilite import CodeHiliteExtension
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 
-# API configurations
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
-MEOW_API_KEY = os.getenv("MEOW_API_KEY", "YOUR_MEOW_API_KEY")  # Replace with your actual Meow API key
+# Configure markdown with extensions
+md = markdown.Markdown(extensions=[
+    'fenced_code',
+    'tables',
+    'nl2br',
+    CodeHiliteExtension(
+        css_class='highlight',
+        linenums=True,
+        linenostart=1,
+        use_pygments=True
+    )
+])
 
+# API configurations
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+MEOW_API_KEY = os.getenv("MEOW_API_KEY")
+ZUKI_API_KEY = os.getenv("ZUKI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+# Initialize API clients
 genai.configure(api_key=GEMINI_API_KEY)
 meow_client = OpenAI(base_url="https://meow.cablyai.com/v1", api_key=MEOW_API_KEY)
+zuki_client = OpenAI(base_url="https://api.zuki.ai/v1", api_key=ZUKI_API_KEY)
+groq_client = Groq(api_key=GROQ_API_KEY)
 
 # Load CLIP model
 clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
@@ -38,6 +64,26 @@ AVAILABLE_MODELS = {
     "deepseek-coder-6.7b-instruct-awq": "meow",
 }
 
+AVAILABLE_MODELS_ZUKI = {
+    "gemini-1.5-flash": "gemini",
+    "caramelldansen-1": "zuki",
+    "claude-3-haiku": "zuki",
+    "deepseek-coder-6.7b-base": "zuki",
+    "deepseek-coder-6.7b-instruct": "zuki"
+}
+
+AVAILABLE_MODELS_GROQ = {
+    "distil-whisper-large-v3-en": "groq",
+    "genuna2-9b-it": "groq",
+    "llama-3.3-70b-versatile": "groq",
+    "llama-3.1-8b-instant": "groq",
+    "llama-guard-3-8b": "groq",
+    "llama3-70b-8192": "groq",
+    "llama3-8b-8192": "groq",
+    "whisper-large-v3": "groq",
+    "whisper-large-v3-turbo": "groq"
+}
+
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -48,29 +94,63 @@ def text_query():
         data = request.json
         user_query = data.get("query", "")
         selected_model = data.get("model", "gemini-1.5-flash")
+        provider = data.get("provider", "zuki")
 
         if not user_query:
             return jsonify({"response": "Please enter a valid query."}), 400
 
-        if AVAILABLE_MODELS[selected_model] == "gemini":
-            model = genai.GenerativeModel(selected_model)
-            response = model.generate_content(user_query)
-            return jsonify({"response": response.text})
+        response_text = ""
+        if provider == "zuki":
+            if selected_model in AVAILABLE_MODELS_ZUKI:
+                if AVAILABLE_MODELS_ZUKI[selected_model] == "gemini":
+                    # Handle Gemini model
+                    model = genai.GenerativeModel(selected_model)
+                    response = model.generate_content(user_query)
+                    response_text = response.text
+                else:
+                    # Handle other Zuki models
+                    response = zuki_client.chat.completions.create(
+                        model=selected_model,
+                        messages=[{"role": "user", "content": user_query}]
+                    )
+                    response_text = response.choices[0].message.content
+            else:
+                return jsonify({"response": "Selected model is not available for Zuki provider."}), 400
+        elif provider == "groq":
+            if selected_model in AVAILABLE_MODELS_GROQ:
+                response = groq_client.chat.completions.create(
+                    model=selected_model,
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": user_query}
+                    ],
+                    temperature=0.7
+                )
+                response_text = response.choices[0].message.content
+            else:
+                return jsonify({"response": "Selected model is not available for Groq provider."}), 400
         else:  # Using Meow API
-            response = meow_client.chat.completions.create(
-                model=selected_model,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": user_query}
-                ],
-                temperature=0.7
-            )
-            return jsonify({"response": response.choices[0].message.content})
+            if selected_model in AVAILABLE_MODELS:
+                response = meow_client.chat.completions.create(
+                    model=selected_model,
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": user_query}
+                    ],
+                    temperature=0.7
+                )
+                response_text = response.choices[0].message.content
+            else:
+                return jsonify({"response": "Selected model is not available for Meow provider."}), 400
+
+        # Convert markdown to HTML and add model name
+        html_content = md.convert(response_text)
+        formatted_response = f"{html_content}\n\n---\nModel: {selected_model}"
+        return jsonify({"response": formatted_response})
 
     except Exception as e:
         return jsonify({"response": f"Error: {str(e)}"}), 500
 
-# New endpoint for processing image with text query
 @app.route("/process_image_query", methods=["POST"])
 def process_image_query():
     try:
@@ -101,7 +181,10 @@ def process_image_query():
         model = genai.GenerativeModel(VISION_MODEL)
         response = model.generate_content([enhanced_prompt, image])
         
-        return jsonify({"response": response.text})
+        # Convert markdown to HTML and add model name
+        html_content = md.convert(response.text)
+        formatted_response = f"{html_content}\n\n---\nModel: {VISION_MODEL}"
+        return jsonify({"response": formatted_response})
 
     except Exception as e:
         return jsonify({"response": f"Error: {str(e)}"}), 500

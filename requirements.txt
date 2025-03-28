@@ -1,0 +1,10 @@
+flask==3.0.2
+google-generativeai==0.3.2
+openai==1.12.0
+groq==0.4.2
+Pillow==10.2.0
+torch==2.2.0
+transformers==4.37.2
+python-dotenv==1.0.1
+markdown==3.5.2
+Pygments==2.17.2 
