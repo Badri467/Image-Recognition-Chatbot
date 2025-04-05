@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify, render_template
 import google.generativeai as genai
 from openai import OpenAI
@@ -12,6 +13,10 @@ from io import BytesIO
 import markdown
 from markdown.extensions import fenced_code, tables, nl2br
 from markdown.extensions.codehilite import CodeHiliteExtension
+import tempfile
+from google.generativeai import types
+import mimetypes
+import re
 
 # Load environment variables from .env file
 load_dotenv()
@@ -27,62 +32,55 @@ md = markdown.Markdown(extensions=[
         css_class='highlight',
         linenums=True,
         linenostart=1,
-        use_pygments=True
+        use_pygments=True,
+        noclasses=False,
+        pygments_style='monokai',
+        guess_lang=True,
+        lang_prefix='hljs language-',
+        pygments_lang_class=True,
+        use_pygments_style=True
     )
 ])
 
 # API configurations
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-MEOW_API_KEY = os.getenv("MEOW_API_KEY")
-ZUKI_API_KEY = os.getenv("ZUKI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Initialize API clients
 genai.configure(api_key=GEMINI_API_KEY)
-meow_client = OpenAI(base_url="https://meow.cablyai.com/v1", api_key=MEOW_API_KEY)
-zuki_client = OpenAI(base_url="https://api.zuki.ai/v1", api_key=ZUKI_API_KEY)
 groq_client = Groq(api_key=GROQ_API_KEY)
 
-# Load CLIP model
-clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+# Create cache directory for models
+cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "model_cache")
+os.makedirs(cache_dir, exist_ok=True)
+
+# Load CLIP model with caching
+try:
+    clip_model = CLIPModel.from_pretrained(
+        "openai/clip-vit-base-patch32",
+        cache_dir=cache_dir,
+        local_files_only=True
+    )
+    clip_processor = CLIPProcessor.from_pretrained(
+        "openai/clip-vit-base-patch32",
+        cache_dir=cache_dir,
+        local_files_only=True
+    )
+except Exception:
+    # If model not found locally, download it once
+    clip_model = CLIPModel.from_pretrained(
+        "openai/clip-vit-base-patch32",
+        cache_dir=cache_dir
+    )
+    clip_processor = CLIPProcessor.from_pretrained(
+        "openai/clip-vit-base-patch32",
+        cache_dir=cache_dir
+    )
 
 # Model configurations
 VISION_MODEL = "gemini-1.5-flash"
-AVAILABLE_MODELS = {
-    "gemini-1.5-flash": "gemini",
-    "gpt-4o": "meow",
-    "gemini-2.0-flash": "meow",
-    "gpt-4o-mini": "meow",
-    "grok-2": "meow",
-    "llama-3.1-405b": "meow",
-    "mistral-nemo-12b": "meow",
-    "claude-3.5-sonnet": "meow",
-    "claude-3.7-sonnet": "meow",
-    "gpt-4.5-preview": "meow",
-    "llama-3.2-11b-instruct": "meow",
-    "deepseek-coder-6.7b-instruct-awq": "meow",
-}
-
-AVAILABLE_MODELS_ZUKI = {
-    "gemini-1.5-flash": "gemini",
-    "caramelldansen-1": "zuki",
-    "claude-3-haiku": "zuki",
-    "deepseek-coder-6.7b-base": "zuki",
-    "deepseek-coder-6.7b-instruct": "zuki"
-}
-
-AVAILABLE_MODELS_GROQ = {
-    "distil-whisper-large-v3-en": "groq",
-    "genuna2-9b-it": "groq",
-    "llama-3.3-70b-versatile": "groq",
-    "llama-3.1-8b-instant": "groq",
-    "llama-guard-3-8b": "groq",
-    "llama3-70b-8192": "groq",
-    "llama3-8b-8192": "groq",
-    "whisper-large-v3": "groq",
-    "whisper-large-v3-turbo": "groq"
-}
 
 @app.route("/")
 def home():
@@ -94,57 +92,110 @@ def text_query():
         data = request.json
         user_query = data.get("query", "")
         selected_model = data.get("model", "gemini-1.5-flash")
-        provider = data.get("provider", "zuki")
+        temperature = data.get("temperature", 0.7)
 
         if not user_query:
             return jsonify({"response": "Please enter a valid query."}), 400
 
         response_text = ""
-        if provider == "zuki":
-            if selected_model in AVAILABLE_MODELS_ZUKI:
-                if AVAILABLE_MODELS_ZUKI[selected_model] == "gemini":
-                    # Handle Gemini model
-                    model = genai.GenerativeModel(selected_model)
-                    response = model.generate_content(user_query)
-                    response_text = response.text
-                else:
-                    # Handle other Zuki models
-                    response = zuki_client.chat.completions.create(
-                        model=selected_model,
-                        messages=[{"role": "user", "content": user_query}]
-                    )
-                    response_text = response.choices[0].message.content
-            else:
-                return jsonify({"response": "Selected model is not available for Zuki provider."}), 400
-        elif provider == "groq":
-            if selected_model in AVAILABLE_MODELS_GROQ:
-                response = groq_client.chat.completions.create(
-                    model=selected_model,
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": user_query}
-                    ],
-                    temperature=0.7
-                )
-                response_text = response.choices[0].message.content
-            else:
-                return jsonify({"response": "Selected model is not available for Groq provider."}), 400
-        else:  # Using Meow API
-            if selected_model in AVAILABLE_MODELS:
-                response = meow_client.chat.completions.create(
-                    model=selected_model,
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": user_query}
-                    ],
-                    temperature=0.7
-                )
-                response_text = response.choices[0].message.content
-            else:
-                return jsonify({"response": "Selected model is not available for Meow provider."}), 400
+        # Handle Gemini model
+        if selected_model == "gemini-1.5-flash":
+            model = genai.GenerativeModel(selected_model)
+            response = model.generate_content(user_query)
+            response_text = response.text
+            
+        # Handle Groq models
+        elif selected_model in ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", 
+                               "llama3-70b-8192", "llama3-8b-8192"]:
+            response = groq_client.chat.completions.create(
+                model=selected_model,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": user_query}
+                ],
+                temperature=temperature
+            )
+            response_text = response.choices[0].message.content
+            
+        # Handle OpenRouter models
+        elif selected_model in ["deepseek/deepseek-v3-base:free", 
+                               "qwen/qwen2.5-vl-3b-instruct:free"]:
+            if not OPENROUTER_API_KEY:
+                return jsonify({"response": "OpenRouter API key not configured."}), 500
 
-        # Convert markdown to HTML and add model name
+            openrouter_client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=OPENROUTER_API_KEY
+            )
+            
+            try:
+                response = openrouter_client.chat.completions.create(
+                    model=selected_model,
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": user_query}
+                    ],
+                    temperature=temperature,
+                    extra_headers={
+                        "HTTP-Referer": "http://localhost:5000",
+                        "X-Title": "Image Recognition Chatbot"
+                    }
+                )
+                response_text = response.choices[0].message.content
+            except Exception as e:
+                return jsonify({"response": f"OpenRouter Error: {str(e)}"}), 500
+
+        else:
+            return jsonify({"response": "Selected model is not available."}), 400
+
+        # Convert markdown to HTML
         html_content = md.convert(response_text)
+        
+        # Process code blocks to ensure proper language classes
+        def process_code_blocks(html):
+            # Find all code blocks
+            code_blocks = re.finditer(r'<pre><code(?: class="([^"]*)")?>(.*?)</code></pre>', html, re.DOTALL)
+            
+            for match in code_blocks:
+                original = match.group(0)
+                classes = match.group(1) or ''
+                content = match.group(2)
+                
+                # If no language class is specified, try to detect it from the content
+                if 'language-' not in classes:
+                    # Common language indicators
+                    if 'def ' in content or 'import ' in content or 'class ' in content:
+                        classes = 'hljs language-python'
+                    elif 'function' in content or 'const ' in content or 'let ' in content:
+                        classes = 'hljs language-javascript'
+                    elif 'public class ' in content or 'import java.' in content or 'System.out.println' in content:
+                        classes = 'hljs language-java'
+                    elif 'package main' in content or 'import "' in content or 'func ' in content:
+                        classes = 'hljs language-go'
+                    elif '#include <' in content or 'namespace ' in content or 'std::' in content:
+                        classes = 'hljs language-cpp'
+                    elif '#include <' in content or 'int main()' in content or 'printf(' in content:
+                        classes = 'hljs language-c'
+                    elif 'SELECT' in content.upper() or 'INSERT' in content.upper() or 'FROM' in content.upper():
+                        classes = 'hljs language-sql'
+                    elif '' in content:
+                        classes = 'hljs language-markdown'
+                    elif '<html' in content or '<body' in content or '<head' in content:
+                        classes = 'hljs language-html'
+                    elif '{' in content and '}' in content:
+                        classes = 'hljs language-css'
+                    else:
+                        classes = 'hljs language-plaintext'
+                
+                # Replace the original code block with the processed version
+                new_block = f'<pre><code class="{classes}">{content}</code></pre>'
+                html = html.replace(original, new_block)
+            
+            return html
+        
+        # Process the HTML content
+        html_content = process_code_blocks(html_content)
+        
         formatted_response = f"{html_content}\n\n---\nModel: {selected_model}"
         return jsonify({"response": formatted_response})
 
@@ -169,7 +220,7 @@ def process_image_query():
         concepts_str = ", ".join([concept for concept, _ in visual_concepts[:10]])
         
         # Build enhanced prompt with CLIP concepts and user query
-        enhanced_prompt = f"""
+        enhanced_prompt = f """
         I've analyzed this image and detected: {concepts_str}.
         
         User's question about this image: "{query}"
@@ -181,8 +232,11 @@ def process_image_query():
         model = genai.GenerativeModel(VISION_MODEL)
         response = model.generate_content([enhanced_prompt, image])
         
-        # Convert markdown to HTML and add model name
+        # Convert markdown to HTML and format code blocks
         html_content = md.convert(response.text)
+        html_content = html_content.replace('<pre><code>', '<div class="code-block"><pre><code>')
+        html_content = html_content.replace('</code></pre>', '</code></pre></div>')
+        
         formatted_response = f"{html_content}\n\n---\nModel: {VISION_MODEL}"
         return jsonify({"response": formatted_response})
 
