@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shared Chat - Image Recognition Chatbot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/monokai.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>Shared Chat</h2>
+      <button id="toggleSidebar" class="collapse-btn">◀</button>
+    </div>
+    
+    <div class="participants-container">
+      <h3>Participants</h3>
+      <div id="participantsList" class="participants-list">
+        <!-- Participants will be loaded here -->
+        <div class="participant guest">
+            <span class="guest-badge">Guest</span>
+            <span class="username"></span>
+          </div>
+      </div>
+    </div>
+    
+    <div class="share-code-container">
+      <h3>Share Code</h3>
+      <div class="share-code-display">
+        <span id="shareCodeDisplay"></span>
+        <button id="copyShareCode" class="copy-btn">Copy</button>
+      </div>
+      <div class="share-link-container">
+        <p>Or share this link:</p>
+        
+        <div class="share-link-display">
+          <button id="copyShareLink" class="copy-btn">Copy</button>
+          <span id="shareLinkDisplay"></span>
+          
+        </div>
+      </div>
+    </div>
+    
+    <div class="sidebar-footer">
+      <button id="leaveChat" class="leave-btn">Leave Chat</button>
+      <button id="returnToMainChat" class="return-btn">Return to Main Chat</button>
+    </div>
+  </div>
+  
+  <div class="main-content">
+    <div class="chat-container">
+      <div class="chat-header">
+        <span id="chatTitle">Shared Chat</span>
+
+        <div class="header-controls">
+          <div id="temperatureControl" class="temperature-control">
+            <label for="temperatureSlider">Temperature: <span id="temperatureValue">0.7</span></label>
+            <input type="range" id="temperatureSlider" min="0" max="1" step="0.1" value="0.7">
+          </div>
+          <button class="theme-toggle" id="themeToggle" title="Toggle Theme">🌓</button>
+          <a href="/logout" class="logout-btn" title="Logout">Logout</a>
+        </div>
+      </div>
+      
+      <div class="chat-box" id="chatBox">
+        <div class="message system">
+          <div class="bubble">Welcome to the shared chat session! You can now collaborate with others.</div>
+        </div>
+      </div>
+      
+      <div class="typing-indicator hidden" id="typingIndicator">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <span>Someone is typing...</span>
+      </div>
+      
+      <div class="chat-input">
+        <div class="input-row">
+          <select id="modelSelect">
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+            <option value="llama-3.3-70b-versatile">Llama 3.3 70B Versatile (Groq)</option>
+            <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant (Groq)</option>
+            <option value="llama3-70b-8192">Llama3 70B 8192 (Groq)</option>
+            <option value="llama3-8b-8192">Llama3 8B 8192 (Groq)</option>
+            <option value="deepseek/deepseek-v3-base:free">Deepseek V3 Base (OpenRouter)</option>
+            <option value="qwen/qwen2.5-vl-3b-instruct:free">Qwen 2.5 (OpenRouter)</option>
+          </select>
+          <input type="text" id="textQuery" placeholder="Type your message...">
+          <button id="sendButton">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="connectionStatus" class="connection-status">Connecting...</div>
+  <!-- Socket.IO client -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+  
+  <!-- Load Highlight.js core and language packs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/javascript.min.js"></script>
+  <!-- Include other language scripts as before -->
+  
+  <script src="{{ url_for('static', filename='js/shared.js') }}"></script>
+</body>
+</html>

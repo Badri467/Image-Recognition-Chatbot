@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+
+body.auth-page { /* Add class="auth-page" to the body tag in login/register html */
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-secondary, #f7f7f8); /* Use fallback if variables not loaded */
+  color: var(--text-primary, #1a1a1a);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* If using variables from the main CSS, make sure they are defined */
+/* You might copy the :root variables or define simpler ones here */
+/* :root { ... } */
+
+.auth-container {
+  width: 100%;
+  max-width: 400px; /* Adjust width as needed */
+  padding: 20px;
+}
+
+.auth-box {
+  background-color: var(--bg-primary, #ffffff);
+  padding: 30px 40px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+  border: 1px solid var(--border-color, #e5e5e5);
+  text-align: center;
+}
+
+.auth-box h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+  margin-bottom: 25px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"] {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--border-color, #e5e5e5);
+  border-radius: 8px;
+  background-color: var(--bg-primary, #ffffff);
+  color: var(--text-primary, #1a1a1a);
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="password"]:focus {
+  outline: none;
+  border-color: var(--accent-color, #10a37f);
+  box-shadow: 0 0 0 2px rgba(16, 163, 127, 0.15); /* Use accent color */
+}
+
+/* Style placeholders */
+.form-group input::placeholder {
+  color: var(--text-secondary, #aaa);
+  opacity: 1; /* Firefox */
+}
+
+.auth-button {
+  width: 100%;
+  padding: 12px;
+  background: var(--accent-color, #10a37f);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-top: 10px; /* Add some space above the button */
+}
+
+.auth-button:hover {
+  background-color: var(--accent-hover, #0e8e6d);
+}
+
+.auth-box p {
+  margin-top: 25px;
+  color: var(--text-secondary, #4a4a4a);
+  font-size: 0.95rem;
+}
+
+.auth-box a {
+  color: var(--accent-color, #10a37f);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.auth-box a:hover {
+  text-decoration: underline;
+}
+
+/* Dark theme adjustments for auth pages */
+[data-theme="dark"] body.auth-page {
+    background-color: var(--bg-primary, #1e1e2e); /* Darker background */
+}
+
+[data-theme="dark"] .auth-box {
+    background-color: var(--bg-secondary, #27293d); /* Slightly lighter box */
+    border-color: var(--border-color, #2d2f36);
+}
+
+[data-theme="dark"] .auth-box h2,
+[data-theme="dark"] .form-group input[type="text"],
+[data-theme="dark"] .form-group input[type="password"] {
+    color: var(--text-primary, #ececec);
+}
+[data-theme="dark"] .form-group input[type="text"],
+[data-theme="dark"] .form-group input[type="password"] {
+    background-color: var(--bg-primary, #1e1e2e);
+    border-color: var(--border-color, #2d2f36);
+}
+
+[data-theme="dark"] .form-group input::placeholder {
+    color: var(--text-secondary, #777);
+}
+
+[data-theme="dark"] .auth-box p {
+    color: var(--text-secondary, #a0a0a0);
+}
+
+[data-theme="dark"] .auth-box a {
+    color: var(--accent-color, #10b981);
+}
+
+/* === End of CSS for Login/Register Pages === */
+    </style>
+</head>
+<body class="auth-page">
+  <div class="auth-container">
+      <div class="auth-box">
+          <h2>Register</h2>
+          <form id="registerForm" action="/register" method="POST">
+              <div class="form-group">
+                  <input type="text" id="username" name="username" placeholder="Username" required>
+              </div>
+              <div class="form-group">
+                  <input type="password" id="password" name="password" placeholder="Password" required>
+              </div>
+              <button type="submit" class="auth-button">Register</button>
+          </form>
+          <p>Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+      </div>
+  </div>
+</body>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    alert(data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred during registration');
+            }
+        });
+    </script>
+</body>
+</html>
