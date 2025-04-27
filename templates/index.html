@@ -11,9 +11,22 @@
 </head>
 <body>
   <div class="sidebar">
-    <h2>Menu</h2>
-    <p>New Chat</p>
-  </div>
+    <div class="sidebar-header">
+        <h2>Chat History</h2>
+        <button id="toggleSidebar" class="collapse-btn">◀</button>
+    </div>
+    <div id="chatList" class="chat-list">
+        <!-- Chats will be loaded here -->
+    </div>
+    <div class="sidebar-footer">
+        <button id="newChatButton" class="new-chat-btn" >+ New Chat</button>
+        <button id="createSharedChat" class="shared-chat-btn">Create Shared Chat</button>
+        <h3>Join Shared Chat</h3>
+        <input class="chat-code-input" type="text" id="chatCodeInput" placeholder="Enter chat code">
+        <br>
+        <button class="join-chat-button" onclick="joinSharedChat()">Join Chat</button>
+    </div>
+</div>
   <div class="main-content">
     <div class="chat-container">
       <div class="chat-header">
@@ -25,6 +38,7 @@
           </div>
           <button id="newChatButton" title="New Chat">🔄</button>
           <button class="theme-toggle" id="themeToggle" title="Toggle Theme">🌓</button>
+          <a href="/logout" class="logout-btn" title="Logout">Logout</a>
         </div>
       </div>
       <div class="chat-box" id="chatBox">
@@ -40,7 +54,7 @@
         <div class="input-row">
           <select id="modelSelect">
             
-            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
             <option value="llama-3.3-70b-versatile">Llama 3.3 70B Versatile (Groq)</option>
             <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant (Groq)</option>
             <option value="llama3-70b-8192">Llama3 70B 8192 (Groq)</option>
@@ -48,10 +62,16 @@
             <option value="deepseek/deepseek-v3-base:free">Deepseek V3 Base (OpenRouter)</option>
             <option value="qwen/qwen2.5-vl-3b-instruct:free">Qwen 2.5 (OpenRouter)</option>
           </select>
+          <div class="search-toggle">
+            <input type="checkbox" id="enableSearch" checked>
+            <label for="enableSearch">Auto-search</label>
+          </div>
           <input type="text" id="textQuery" placeholder="Type your query...">
           <input type="file" id="imageInput" accept="image/*" hidden>
+          <button id="voiceBtn">🎙 Speak</button>
           <button id="sendButton">Send</button>
           <button id="uploadButton">Upload</button>
+          
         </div>
       </div>
     </div>
