@@ -1,4 +1,4 @@
-# Image Recognition Chatbot
+# AI Vision & Voice Chatbot with Real-Time Rooms
 
 An intelligent chatbot application that combines advanced image recognition capabilities with multiple language models to analyze images and respond to user queries.
 
