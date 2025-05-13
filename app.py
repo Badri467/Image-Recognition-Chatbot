@@ -33,12 +33,14 @@ from flask_cors import CORS
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from waitress import serve
-
+import openai
+import subprocess
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your-secret-key")  # for session management
+app.config['UPLOAD_FOLDER'] = os.path.join('static', 'videos')
 CORS(app, supports_credentials=True)
 # Initialize Eleven Labs client
 elevenlabs_client = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
@@ -163,8 +165,8 @@ os.makedirs(cache_dir, exist_ok=True)
 app.config.update(
     SESSION_COOKIE_NAME='chatbot_session',
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SECURE=False,  # Set to True in production
-    PERMANENT_SESSION_LIFETIME=86400  # 1 day
+    SESSION_COOKIE_SECURE=False,  
+    PERMANENT_SESSION_LIFETIME=86400  
 )
 
 # Load CLIP model with caching
@@ -284,6 +286,159 @@ def new_chat():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+@app.route('/create_animation')
+def create_animation():
+    return render_template('animation.html')  # Make sure this file exists in /templates
+# First, ensure the upload folder exists
+# Define a function to setup folders
+def setup_folders():
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Call it directly
+setup_folders()
+
+@app.route('/generate_animation', methods=['POST'])
+def generate_animation():
+    data = request.get_json()
+    prompt = data.get('prompt')
+    if not prompt:
+        return jsonify({'success': False, 'error': 'No prompt provided'})
+
+    # Add instructions for better animation quality
+    enhanced_prompt = f"""
+    Generate a Manim CE Python script that will create a clear and well-formatted animation for the following description:
+    
+    {prompt}
+    
+    IMPORTANT FORMATTING REQUIREMENTS:
+    1. Make all text have font_size=24 minimum for readability
+    2. Make all arrows have stroke_width=3 minimum and tip_length=0.3 for visibility
+    3. Use config.frame_width and config.frame_height from Manim to ensure everything fits on screen
+    4. Add a scaling factor of 0.8 to all objects to ensure they stay within screen bounds
+    5. Ensure all text and elements are properly aligned and use WHITE color for maximum visibility
+    6. Use proper padding and spacing between elements
+    7. Scale down complex diagrams to fit within the screen dimensions
+    8. Use .shift(<vector>) as a positional argument (not keyword) — for example, use `mobject.shift(UP)` not `mobject.shift(direction=UP)`
+
+    Only include the actual Python code in your response, with no explanations.
+    """
+    video_id = str(uuid.uuid4())[:8]
+    script_path = f"temp_{video_id}.py"
+    manim_code = None
+
+    try:
+        model = genai.GenerativeModel("gemini-2.0-flash")
+        response = model.generate_content(enhanced_prompt)
+        manim_code = response.text
+
+        # Extract code block if needed
+        if "```" in manim_code:
+            code_parts = re.split(r'```(?:python)?', manim_code)
+            manim_code = code_parts[1].strip() if len(code_parts) > 1 else manim_code.strip()
+        
+        # Make code ends with ``` if it's still present
+        if manim_code.endswith("```"):
+            manim_code = manim_code[:-3].strip()
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Gemini API error: {str(e)}"})
+
+    
+    
+    # Create output paths
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    output_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_id}.mp4")
+    output_url = f"/static/videos/{video_id}.mp4"
+
+    try:
+        # Print for debugging
+        print(f"Generating animation with ID: {video_id}")
+        print(f"Output will be saved to: {output_path}")
+        
+        with open(script_path, 'w') as f:
+            f.write(manim_code)
+
+        # Run manim with proper output path
+        result = subprocess.run([
+            "manim", 
+            "-ql",
+            "--media_dir", "static",  # Set media directory to static folder
+            script_path, 
+            "Scene"
+        ], capture_output=True, text=True, check=False)
+        
+        # Print manim output for debugging
+        print("Manim stdout:", result.stdout)
+        print("Manim stderr:", result.stderr)
+        
+        if result.returncode != 0:
+            return jsonify({'success': False, 'error': f"Manim error: {result.stderr}"})
+
+        # Check possible locations for the output file
+        found_path = None
+
+        # First, look for any mp4 files in the expected directories
+        search_directories = [
+            f"static/videos/temp_{video_id}",
+            f"static/videos/temp_{video_id}/480p15",
+            f"static/videos/temp_{video_id}/1080p60",
+            f"media/videos/temp_{video_id}",
+            f"media/videos/temp_{video_id}/480p15",
+            f"media/videos/temp_{video_id}/1080p60"
+        ]
+
+        for directory in search_directories:
+            if os.path.exists(directory):
+                for file in os.listdir(directory):
+                    if file.endswith(".mp4"):
+                        found_path = os.path.join(directory, file)
+                        print(f"Found video at: {found_path}")
+                        break
+            if found_path:
+                break
+
+        # If not found, search more widely
+        if not found_path:
+            print("Video not found in expected locations, searching more widely...")
+            for root, dirs, files in os.walk("static"):
+                for file in files:
+                    if file.endswith(".mp4") and f"temp_{video_id}" in root:
+                        found_path = os.path.join(root, file)
+                        print(f"Found video in extended search: {found_path}")
+                        break
+                if found_path:
+                    break
+                    
+            # If still not found, check media directory too
+            if not found_path:
+                for root, dirs, files in os.walk("media"):
+                    for file in files:
+                        if file.endswith(".mp4") and f"temp_{video_id}" in root:
+                            found_path = os.path.join(root, file)
+                            print(f"Found video in media directory: {found_path}")
+                            break
+                    if found_path:
+                        break
+        
+        if found_path:
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            # Copy instead of move to avoid permission issues
+            import shutil
+            shutil.copy2(found_path, output_path)
+            print(f"Video found at {found_path} and copied to {output_path}")
+            return jsonify({'success': True, 'video_url': output_url})
+        else:
+            print("Could not find the generated video in any expected location")
+            return jsonify({'success': False, 'error': 'Could not locate generated video.'})
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+    finally:
+        # Clean up temporary files
+        if os.path.exists(script_path):
+            os.remove(script_path)
 
 @app.route("/get_user_chats")
 def get_user_chats():
@@ -702,6 +857,15 @@ def create_shared_chat():
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+        
+@app.route('/chat/<chat_id>')
+def load_shared_chat(chat_id):
+    # Fetch chat from DB or file
+    chat_data = get_chat(chat_id)
+    if chat_data:
+        return jsonify(chat_data)
+    else:
+        return jsonify({'error': 'Chat not found'}), 404
 
 # Route to join a shared chat
 @app.route("/join_shared_chat/<share_code>", methods=["GET"])
@@ -1039,7 +1203,7 @@ def should_use_search(query):
     Determine if the query would benefit from search results
     """
     # Keywords indicating a need for current information
-    current_info_keywords = [
+    current_info_keywords = [   
         'today', 'latest', 'recent', 'news', 'current', 'updates',
         'weather', 'price', 'stock', 'event', 'happening', 'yesterday',
         'this week', 'this month', 'this year', 'announcement'
@@ -1099,4 +1263,5 @@ def extract_text_from_url(url):
         return f"Error fetching {url}: {e}"
     
 if __name__ == "__main__":
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     socketio.run(app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
