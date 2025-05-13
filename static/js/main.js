@@ -511,7 +511,9 @@ document.addEventListener('DOMContentLoaded', () => {
     hljs.highlightElement(block);
   });
 }); 
-
+document.getElementById('createAnimationBtn').addEventListener('click', () => {
+  window.location.href = '/create_animation';
+});
 // Voice button functionality
 document.getElementById('voiceBtn').addEventListener('click', () => {
   window.location.href = '/voice_chat';
