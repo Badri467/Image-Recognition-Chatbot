@@ -3,8 +3,11 @@
 OmniSense AI is a sophisticated Flask-based AI platform that combines multiple cutting-edge capabilities including multi-model text generation, image analysis, voice interaction, real-time collaboration, and dynamic animation generation. This platform seamlessly integrates several state-of-the-art AI technologies to provide a comprehensive communication and creation tool.
 
 ![chatbot interface](images/Screenshot%202025-05-13%20085236.png)
-
-
+![image analysis](images/Screenshot%202025-03-29%20020211.png)
+![image analysis](images/Screenshot%202025-03-29%20020155.png)
+![models available](images/Screenshot%202025-03-29%20020047.png)
+![2d animation videos generation](images/Screenshot%202025-05-13%20082343.png)
+![web search results](images/Screenshot%202025-04-18%20184331.png)
 A full-featured AI chatbot platform built with Flask that integrates multiple LLM services:
 
 - 🤖 Multiple model support (Gemini, Groq, OpenRouter)
