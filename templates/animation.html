@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Create 2D Animation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .container {
+      max-width: 800px;
+      width: 95%;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    
+    textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      resize: vertical;
+      margin-top: 10px;
+      min-height: 100px;
+    }
+    
+    .button-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 15px;
+    }
+    
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    
+    button:hover {
+      background-color: #45a049;
+    }
+    
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    #videoResult {
+      margin-top: 30px;
+      text-align: center;
+    }
+    
+    video {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .error {
+      color: red;
+      text-align: center;
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #ffeeee;
+      border-radius: 5px;
+      display: none;
+    }
+    
+    .loading {
+      margin-top: 20px;
+      text-align: center;
+      color: #666;
+      display: none;
+    }
+    
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0,0,0,0.3);
+      border-radius: 50%;
+      border-top-color: #4CAF50;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .tips-container {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #4CAF50;
+    }
+    
+    .tips-container h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    
+    .tips-container ul {
+      margin-bottom: 0;
+      padding-left: 20px;
+    }
+    
+    .tips-container li {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Create 2D Animation</h2>
+    
+    <div class="tips-container">
+      <h3>Tips for Better Animations</h3>
+      <ul>
+        <li>Be specific about what objects should appear and how they should move</li>
+        <li>Mention if you want text, graphs, equations, or geometric shapes</li>
+        <li>Specify transitions like "fade in", "transform", or "move"</li>
+        <li>Keep animations simple - focus on one concept per animation</li>
+        <li>Examples: "Show a circle morphing into a square", "Animate the Pythagorean theorem with colored squares"</li>
+      </ul>
+    </div>
+    
+    <textarea id="animationPrompt" rows="5" placeholder="Example: Create an animation showing a red circle morphing into a blue square, then display the text 'Shape Transformation' below it."></textarea>
+    
+    <div class="button-container">
+      <button id="generateBtn" onclick="submitPrompt()">Generate Animation</button>
+    </div>
+    
+    <div id="loadingIndicator" class="loading">
+      <div class="loading-spinner"></div>
+      Generating animation... This may take 30-60 seconds.
+    </div>
+    
+    <div id="errorDisplay" class="error"></div>
+    <div id="videoResult"></div>
+  </div>
+  
+  <script>
+    function submitPrompt() {
+      const prompt = document.getElementById('animationPrompt').value.trim();
+      const errorDiv = document.getElementById('errorDisplay');
+      const videoDiv = document.getElementById('videoResult');
+      const loadingDiv = document.getElementById('loadingIndicator');
+      const generateBtn = document.getElementById('generateBtn');
+      
+      errorDiv.textContent = '';
+      errorDiv.style.display = 'none';
+      
+      if (!prompt) {
+        errorDiv.textContent = "Please enter a description for the animation.";
+        errorDiv.style.display = 'block';
+        return;
+      }
+      
+      // Show loading indicator and disable button
+      loadingDiv.style.display = 'block';
+      generateBtn.disabled = true;
+      videoDiv.innerHTML = '';
+      
+      fetch('/generate_animation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      })
+      .then(res => res.json())
+      .then(data => {
+        // Hide loading indicator and re-enable button
+        loadingDiv.style.display = 'none';
+        generateBtn.disabled = false;
+        
+        if (data.success) {
+          const timestamp = new Date().getTime();
+          videoDiv.innerHTML = `
+            <video controls autoplay width="640" height="360">
+              <source src="${data.video_url}?t=${timestamp}" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>`;
+            
+          // Force reload the video element
+          const videoElement = videoDiv.querySelector('video');
+          videoElement.load();
+        } else {
+          errorDiv.textContent = data.error || "An error occurred while generating the video.";
+          errorDiv.style.display = 'block';
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        errorDiv.textContent = "Server error. Please try again later.";
+        errorDiv.style.display = 'block';
+        loadingDiv.style.display = 'none';
+        generateBtn.disabled = false;
+      });
+    }
+  </script>
+</body>
+</html>
