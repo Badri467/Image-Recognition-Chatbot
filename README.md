@@ -1,113 +1,173 @@
-# AI Vision & Voice Chatbot with Real-Time Rooms with 2D animations generator
+# 🚀 OmniSense AI - Advanced Multi-Modal Intelligent Platform
 
-An intelligent chatbot application that combines advanced image recognition capabilities with multiple language models to analyze images and respond to user queries.
+OmniSense AI is a sophisticated Flask-based AI platform that combines multiple cutting-edge capabilities including multi-model text generation, image analysis, voice interaction, real-time collaboration, and dynamic animation generation. This platform seamlessly integrates several state-of-the-art AI technologies to provide a comprehensive communication and creation tool.
 
-## Features
+![OmniSense AI Platform](https://media.example.com/omnisense-placeholder.jpg)
 
-- **Image Analysis**: Upload images and ask specific questions about their content
-- **Visual Concept Extraction**: Uses the CLIP model to identify objects, activities, emotions, and styles in uploaded images
-- **Enhanced Prompting**: Combines visual concepts with user queries to provide more accurate and contextually relevant responses
-- **User-Friendly Interface**: Clean, intuitive chat interface with image upload capabilities
-- **Persistent Context**: Ability to ask multiple questions about the same uploaded image
+## 🌟 Key Features
 
-## Tech Stack
+### 🧠 Advanced Multi-Model AI Interaction
+- Support for multiple AI models:
+  - **Gemini 2.0 Flash** - Google's advanced text and vision model
+  - **Llama 3.3 70B** - High-capacity language model
+  - **Llama 3.1 8B** - Faster, smaller model for quicker responses
+  - **Various other models** via Groq API integration
 
-### Backend
-- **Flask**: Lightweight web framework for Python
-- **Google Generative AI**: API for accessing Gemini models
-- **Zuki Journey API**: Interface for accessing multiple AI models
-- **Hugging Face Transformers**: Used for CLIP model implementation
-- **PyTorch**: Deep learning framework for CLIP model inference
-- **Pillow (PIL)**: Image processing library
+### 🔍 Enhanced Web Search Integration
+- Real-time Google Search API integration for current information
+- Intelligent query analysis to determine when to use search enhancement
+- Web content extraction and summarization
+- Properly cited sources with clickable references
+- Contextual information integration into AI responses
 
-### Frontend
-- **HTML/CSS**: For responsive user interface
-- **JavaScript**: For client-side interactions
-- **Fetch API**: For asynchronous communication with the backend
-  
-![Chatbot Interface](./Screenshot%202025-03-13%20222038.png)
-![Image Upload](./Screenshot%202025-03-13%20222114.png)
-## Use Cases
+### 👁️ Computer Vision & Image Analysis
+- CLIP (Contrastive Language-Image Pre-training) integration for image understanding
+- Automatic visual concept extraction from uploaded images
+- Sophisticated image-based querying and analysis
+- Multi-modal comprehension combining visual and textual inputs
 
-- **Education**: Analyze diagrams, charts, or educational content in images
-- **Research**: Extract information from visual data or research materials
-- **Accessibility**: Help visually impaired users understand image content
-- **Content Analysis**: Identify objects, themes, and context in photographs
-- **Technical Support**: Analyze screenshots of errors or technical issues
-- **Travel**: Identify landmarks, locations, or points of interest in travel photos
-- **Art Analysis**: Understand artistic styles, techniques, or subject matter in artwork
-- **Design Feedback**: Get AI insights on design work, UI mockups, or prototypes
-![Query Processing](./Screenshot%202025-03-13%20222257.png)
-![Query Processing](./Screenshot%202025-03-13%20222326.png)
-![Results](./Screenshot%202025-03-13%20222450.png)
-## Setup Instructions
+### 🎬 Real-time 2D Animation Generation
+- Custom Manim CE integration for mathematical and conceptual animations
+- Text-to-animation capabilities
+- Dynamic visualization of complex concepts
+- Real-time rendering and display in browser
+
+### 🔊 Voice Interaction System
+- Text-to-speech using ElevenLabs advanced voice synthesis
+- Multiple voice options with customizable settings
+- Natural-sounding voice output for accessibility
+- Speech-optimized text processing
+
+### 👥 Real-time Collaborative Workspace
+- Socket.IO-powered real-time chat rooms
+- Shared chat sessions with unique shareable codes
+- Multi-user synchronized interactions
+- Live user presence indicators
+- Guest access system with temporary accounts
+
+### 🔒 User Authentication System
+- Secure user registration and login
+- Password hashing for security
+- Session management
+- Guest account provisioning for quick access
+
+### 📊 Markdown & Code Rendering
+- Advanced markdown processing with syntax highlighting
+- Code block language detection
+- Beautiful formatting of complex responses
+- Support for tables, lists, and other formatting elements
+
+## 🛠️ Technical Implementation
+
+### Backend Architecture
+- **Flask**: Core web framework with extensive routing
+- **MongoDB**: Document database for chat storage and user management
+- **Socket.IO**: Real-time bidirectional event-based communication
+- **APScheduler**: Background task scheduling
+- **Waitress**: Production-grade WSGI server
+
+### AI Service Integration
+- **Google Generative AI**: For Gemini model access
+- **Groq**: For Llama model access
+- **OpenAI/OpenRouter**: For additional model options
+- **ElevenLabs**: For text-to-speech capabilities
+
+### Vision Processing
+- **CLIP**: For image understanding and concept extraction
+- **Transformers**: Hugging Face libraries for model management
+- **PIL**: For image processing and manipulation
+
+### Animation System
+- **Manim CE**: Mathematical Animation Engine
+- **Dynamic code generation**: AI-generated animation scripts
+- **Subprocess management**: For rendering animations
+
+### Collaborative Features
+- **Room-based chat system**: For multiple collaborative spaces
+- **Shared state management**: For consistent user experiences
+- **Presence indicators**: For active user awareness
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.7+
-- pip (Python package manager)
-
-### API Keys
-You'll need to obtain API keys for:
-- Google Gemini API
-- Zuki Journey API
+- Python 3.8+
+- MongoDB
+- Manim CE (for animation features)
+- API keys for: Google Generative AI, Groq, Google Search, ElevenLabs
 
 ### Installation
 
-1. Clone the repository:
+1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/Image-Recognition-Chatbot.git
-cd Image-Recognition-Chatbot
+git clone https://github.com/yourusername/omnisense-ai.git
+cd omnisense-ai
 ```
 
-2. Install dependencies:
+2. Create and activate a virtual environment
 ```bash
-pip install flask google-generativeai openai pillow torch transformers
+python -m venv venv
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
 ```
 
-3. Set up environment variables for your API keys:
+3. Install dependencies
 ```bash
-export GEMINI_API_KEY="your_gemini_api_key_here"
-export ZUKI_API_KEY="your_zuki_api_key_here"
+pip install -r requirements.txt
 ```
 
-Alternatively, you can directly update the keys in the `app.py` file (not recommended for production).
+4. Create a `.env` file with your API keys
+```
+GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+OPENAI_API_KEY=your_openai_api_key
+GOOGLE_SEARCH_API_KEY=your_google_search_api_key
+GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
+ELEVENLABS_API_KEY=your_elevenlabs_api_key
+ELEVENLABS_VOICE_ID=your_preferred_voice_id
+MONGO_URI=your_mongodb_connection_string
+FLASK_SECRET_KEY=your_secret_key
+```
 
-4. Run the application:
+5. Run the application
 ```bash
 python app.py
 ```
 
-5. Open your browser and navigate to:
-```
-http://127.0.0.1:5000
-```
+6. Open your browser and navigate to `http://localhost:5000`
 
-## How to Use
+## 💡 Use Cases
 
-1. **Text-Only Queries**:
-   - Select the desired AI model from the dropdown menu
-   - Type your question in the text field
-   - Click "Send" or press Enter
+### Educational Tools
+- Generate explanatory animations for complex concepts
+- Real-time Q&A with web search augmentation
+- Collaborative learning environments
 
-2. **Image Analysis**:
-   - Click "Upload" to select an image from your device
-   - Type a question about the image in the text field
-   - Click "Send" or press Enter
-   - Continue asking multiple questions about the same image as needed
-   - Click the "x" on the image preview to remove it when finished
+### Content Creation
+- Quick animation generation for presentations
+- Voice synthesis for narration
+- Image analysis and description
 
-## Future Improvements
+### Team Collaboration
+- Shared AI-assisted workspaces
+- Real-time collaborative problem-solving
+- Knowledge sharing with integrated search
 
-- User authentication and conversation history
-- Support for video analysis
-- Batch image processing
-- Fine-tuning models for specific domains or use cases
-- Image editing or generation capabilities
-- Mobile application version
+### Research Assistance
+- Web-augmented information gathering
+- Visual data analysis through image uploads
+- Complex query processing with multiple AI models
+
+## 🌐 Future Enhancements
+
+- Mobile application integration
+- Custom fine-tuned models
+- Advanced document analysis
+- More animation templates and styles
+- Audio input processing
+- Integration with popular productivity tools
 
 
-## Acknowledgments
 
-- OpenAI for the CLIP model
-- Google for the Gemini API
-- Zuki Journey for their API access
+Created with ❤️ by [K.BadriNaryana]
+
+*Note: This platform requires valid API keys for full functionality. Some features may require additional configuration.*
