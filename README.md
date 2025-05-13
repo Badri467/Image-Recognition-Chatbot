@@ -1,4 +1,4 @@
-# AI Vision & Voice Chatbot with Real-Time Rooms
+# AI Vision & Voice Chatbot with Real-Time Rooms with 2D animations generator
 
 An intelligent chatbot application that combines advanced image recognition capabilities with multiple language models to analyze images and respond to user queries.
 
